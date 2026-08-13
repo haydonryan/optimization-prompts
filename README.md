@@ -12,6 +12,11 @@ optimization skill reads the relevant prompt for the task at hand and runs it.
 baseline/A-B measurement loop, correctness validation, and final report; each prompt
 here is one focused optimization pass the skill can dispatch.
 
+The coordinator skill lives at [`SKILL.md`](SKILL.md). It detects the target
+language, spawns one subagent per prompt in the matching language directory, then
+classifies and A/B tests every discovered candidate individually for **speed** and
+**release binary size**.
+
 ## Why this exists
 
 - **One skill, not dozens.** Every optimization *category* and *language* combination
@@ -28,13 +33,28 @@ Prompts are organized first by language, then by optimization category.
 
 ```text
 optimization-prompts/
-├── rust/
+├── SKILL.md              # the optimization coordinator skill (root)
+├── rust/                 # concern-specific prompts, one per optimization concern
 │   ├── allocation-elimination.md
 │   ├── ownership-clone-copy.md
-│   ├── monomorphization-shrink.md
-│   ├── simd-vectorization.md
-│   ├── type-system-hardening.md
-│   └── ...
+│   ├── collections-data-structures.md
+│   ├── monomorphization.md
+│   ├── string-formatting-parsing.md
+│   ├── async-future-state.md
+│   ├── struct-enum-layout.md
+│   ├── control-flow-generated-code.md
+│   ├── bounds-checks-iteration.md
+│   ├── repeated-work-algorithmic.md
+│   ├── initialization-buffer-reuse.md
+│   ├── inlining-cold-code.md
+│   ├── synchronization.md
+│   ├── serialization.md
+│   ├── logging-diagnostics.md
+│   ├── structural-review.md
+│   ├── compact-idiomatic-code.md
+│   ├── memory-retained-peak.md
+│   ├── dependency-feature-reduction.md
+│   └── release-profile-binary-size.md
 └── cpp/                 # future
     └── ...
 ```
@@ -76,19 +96,20 @@ targeted passes (e.g. SIMD hot loops) restrict scope.
 
 ## How the skill uses this repo
 
-1. The skill determines the target language and the optimization request.
-2. It selects the matching prompt(s) from this repo (by `language` + `category`).
-3. It runs the prompt as one focused analysis pass, sharing the repo-wide baseline
-   and A/B measurement loop defined by the skill.
-4. The pass returns candidates; the skill validates, measures, and accepts/rejects
-   each one — exactly as it does today.
+1. The skill detects the target language from the build manifest (e.g. `Cargo.toml`).
+2. It establishes a baseline: tests, release binary size, and representative speed.
+3. It spawns **one subagent per prompt** in the matching language directory, each
+   running its prompt against the codebase and returning classified candidates.
+4. The skill deduplicates candidates, then **A/B tests each one individually** for
+   speed and release binary size (correctness gate first).
+5. It accepts/rejects each candidate and produces the final report.
 
-The skill always enforces the shared invariants regardless of prompt:
+Every prompt enforces a shared invariant regardless of concern:
 
-- A/B test every candidate against the baseline.
-- Preserve externally observable behavior.
-- Report binary size and performance deltas.
-- Maintain 100% relevant-source coverage.
+- Each found optimization is **classified** (category, file, site, semantic risk,
+  expected impact).
+- Each is **A/B tested individually** for speed and release binary size.
+- Correctness and 100% relevant-source coverage are always required.
 
 ## Adding a prompt
 
