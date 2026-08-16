@@ -34,6 +34,16 @@ Do **not** mechanically replace generics with `dyn Trait`. Trait objects can hur
 performance and grow call overhead. Only propose a change that is likely to reduce
 binary size without a performance regression.
 
+## A/B-only validation
+
+This concern can **only** be validated by measurement: whether replacing generics
+with dynamic dispatch (or a non-generic core) actually shrinks the binary without a
+hot-path regression depends on generated machine code and the target architecture.
+Source reasoning alone cannot decide it. Do not rank a candidate as a win, or claim a
+benefit, without an A/B result on the target arch(es). If you can reason the
+direction but not the magnitude, mark the candidate
+`direction-known, magnitude-unmeasured` instead of asserting a benefit.
+
 ## Output contract
 
 Report every candidate in this exact format. Do **not** modify the codebase — the

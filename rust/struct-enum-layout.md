@@ -49,6 +49,16 @@ Do **not** shrink integer widths without proving range correctness. A data-layou
 optimization must account for cache behavior as well as allocation overhead — a
 smaller struct in a hot collection usually wins, but confirm with measurement.
 
+## A/B-only validation
+
+Size is analytic, but whether a smaller layout is actually faster in a hot collection
+depends on cache behavior and the target architecture — that half of the claim can
+**only** be validated by measurement. Do not rank a candidate as a runtime win, or
+claim a speed benefit, without an A/B result on the target arch(es). Report the
+`size_of`/`align_of` delta as a fact; only assert the speed effect with an A/B. If
+you can reason the direction but not the magnitude, mark the candidate
+`direction-known, magnitude-unmeasured`.
+
 ## Output contract
 
 Report every candidate in this exact format. Do **not** modify the codebase — the

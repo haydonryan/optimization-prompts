@@ -48,6 +48,15 @@ This can reduce hot-function size and improve instruction-cache locality.
 
 Do **not** add attributes speculatively — they must be measured.
 
+## A/B-only validation
+
+This concern can **only** be validated by measurement. Source reasoning alone cannot
+predict whether a change wins: the outcome depends on generated machine code,
+instruction-cache behavior, the target architecture, and the actual workload. Do not
+rank a candidate as a win, or claim a benefit, without an A/B result on the target
+arch(es). If you can reason the direction but not the magnitude, mark the candidate
+`direction-known, magnitude-unmeasured` instead of asserting a benefit.
+
 ## Output contract
 
 Report every candidate in this exact format. Do **not** modify the codebase — the
