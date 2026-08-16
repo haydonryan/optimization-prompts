@@ -12,10 +12,13 @@ optimization skill reads the relevant prompt for the task at hand and runs it.
 baseline/A-B measurement loop, correctness validation, and final report; each prompt
 here is one focused optimization pass the skill can dispatch.
 
-The coordinator skill lives at [`SKILL.md`](SKILL.md). It detects the target
-language, spawns one subagent per prompt in the matching language directory, then
-classifies and A/B tests every discovered candidate individually for **speed** and
-**release binary size**.
+The coordinator skill lives at [`SKILL.md`](SKILL.md), with two variant modes:
+[`SKILL-stories.md`](SKILL-stories.md) (turns every A/B-verified improvement into a
+backlog story via `add-backlog-story`) and [`SKILL-report.md`](SKILL-report.md)
+(writes a complete detailed report including LOW-priority candidates). Each mode
+detects the language, spawns one subagent per prompt in the matching language
+directory, then classifies and A/B tests every discovered candidate individually for
+**speed** and **release binary size**.
 
 ## Why this exists
 
@@ -27,6 +30,21 @@ classifies and A/B tests every discovered candidate individually for **speed** a
   candidate, preserve observable behavior) lives in the skill; the pass-specific
   knowledge lives here.
 
+## Modes
+
+Three coordinator skills share the same prompt library and differ only in output:
+
+- **`SKILL.md`** — base mode. Runs every prompt, A/B tests each candidate, and
+  produces the final report of accepted optimizations.
+- **`SKILL-stories.md`** — backlog-story mode. Runs every prompt, A/B tests each
+  candidate across the **LTO on/off × x86_64/aarch64** matrix, and turns every
+  accepted improvement into a backlog story via the `add-backlog-story` skill. No
+  improvement lands without a full A/B matrix row.
+- **`SKILL-report.md`** — detailed-report mode. Runs every prompt, A/B tests each
+  candidate, and writes a complete report that **includes LOW-priority candidates**
+  (they are never dropped) — each with flagged code, proposed remediation, per-arch
+  A/B evidence, and verification.
+
 ## Repository layout
 
 Prompts are organized first by language, then by optimization category.
@@ -34,6 +52,8 @@ Prompts are organized first by language, then by optimization category.
 ```text
 optimization-prompts/
 ├── SKILL.md              # the optimization coordinator skill (root)
+├── SKILL-stories.md      # coordinator variant: A/B (LTO × arch) → backlog stories
+├── SKILL-report.md       # coordinator variant: complete report incl. LOW candidates
 ├── rust/                 # concern-specific prompts, one per optimization concern
 │   ├── allocation-elimination.md
 │   ├── async-future-state.md
