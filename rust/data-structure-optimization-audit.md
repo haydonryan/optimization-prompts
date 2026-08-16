@@ -66,6 +66,34 @@ Conversion boundaries are preferable to breaking an existing format. Check every
 serialization path explicitly; "size_of is smaller" is never enough on its own when a
 type is serde-boundary or persisted.
 
+## Ordering semantics (hard guard)
+
+Before changing any collection type, iteration order, or index-based operation, treat
+**ordering** as load-bearing until proven otherwise. An ordering change is a
+correctness change, not a micro-optimization.
+
+For any ordered→unordered swap (e.g. `BTreeMap`→`HashMap`, `Vec`→`HashSet`,
+sorted `Vec`→`HashMap`) or order-affecting operation (`swap_remove`, `retain`,
+`sort` → `sort_unstable`, `dedup` that changes multiplicity), verify ALL of:
+
+- whether iteration order is **externally visible** (serialized output, logs,
+  notification text, stdout — any format emitted to a user or another system)
+- whether callers **keep indexes** or rely on positional access into the collection
+- whether **iteration order matters later** in the same or a downstream pass
+- whether **tests pin ordering** (assert exact output or sequence)
+
+**Especially: anything read directly from disk in order.** If the structure is
+populated from a file — persisted state, a config, a log, or a record stream that is
+read (or written) sequentially and whose on-disk order is significant — do not
+reorder or re-represent it in a way that changes the disk format or the order in
+which records are read/written. Preserve the on-disk representation and its read
+order even if an unordered in-memory representation would be faster; only change the
+internal representation behind a conversion boundary that keeps the disk format
+byte-identical and the read order unchanged.
+
+If you cannot prove ordering is irrelevant, do not propose the change; say so and
+mark it `ordering-uncertain`.
+
 ## Phase 0 — Calibrate to actual scale (do this first)
 
 Before analyzing any structure, establish the real scale of the codebase so the
