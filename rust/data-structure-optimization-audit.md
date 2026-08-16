@@ -94,6 +94,13 @@ byte-identical and the read order unchanged.
 If you cannot prove ordering is irrelevant, do not propose the change; say so and
 mark it `ordering-uncertain`.
 
+A safe ordering change must still earn its place: run the A/B test and keep it only
+if it is provably **better and smaller** (faster speed, equal-or-smaller release
+binary) on the target architecture(s) — never recommend an ordering change on the
+strength of "should be faster". If ordering cannot be proven irrelevant AND no safe
+conversion boundary exists, do not propose it; say so, mark it `ordering-uncertain`,
+and specify the A/B that would justify it if a safe boundary later appears.
+
 ## Phase 0 — Calibrate to actual scale (do this first)
 
 Before analyzing any structure, establish the real scale of the codebase so the

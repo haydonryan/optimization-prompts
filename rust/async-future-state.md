@@ -63,7 +63,7 @@ Priority: HIGH | MEDIUM | LOW
 Description:
 Current code (before):
 Proposed code (after):
-Measured impact (binary size / speed, before -> after):
+Measured impact (per target arch: binary size / speed, before -> after):
 Verification / test:
 Semantic risk (what could break / what to verify):
 ```
@@ -81,6 +81,13 @@ Requirements:
   Record real before/after numbers in `Measured impact`. If you cannot measure in
   this environment, mark the candidate `unmeasured` and name exactly which
   measurement is missing.
+- **Measure on the target architectures.** A/B results are architecture-specific:
+  layout, alignment, `target-cpu`, and vectorization differ between `x86_64` and
+  `aarch64`. Build and measure on every arch the software ships on (commonly both).
+  Binary size is measurable for any arch via cross-compilation
+  (`cargo build --target <triple>`); runtime speed requires native execution (or
+  `qemu-*` emulation, flagged as such). Report the arch each number came from; if an
+  arch cannot be measured, mark it `unmeasured` and name the missing toolchain.
 - **`Verification / test` names the specific existing test or scenario** that guards
   the change, plus the command to run it (e.g. `just test && just check`). If no
   test exists, say so and specify the regression to add.
