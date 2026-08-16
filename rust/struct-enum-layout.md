@@ -56,17 +56,38 @@ coordinator applies each change in isolation and A/B tests it.
 
 ```text
 Candidate ID: struct-enum-layout-<N>
+Title:
 File:
 Function / site:
 Category: memory-layout
-Current implementation (with size_of/align_of if known):
-Proposed implementation:
-Why it may reduce release binary size:
-Why it may improve speed:
-Why it may reduce allocations/memory:
+Priority: HIGH | MEDIUM | LOW
+Description:
+Current code (before):
+Proposed code (after):
+Measured impact (binary size / speed, before -> after):
+Verification / test:
 Semantic risk (what could break / what to verify):
-Expected impact: HIGH | MEDIUM | LOW
 ```
+
+Requirements:
+
+- **Code is mandatory.** `Current code (before)` and `Proposed code (after)` MUST be
+  concrete, apply-able code snippets (Rust unless stated otherwise) — not prose
+  summaries. If a candidate genuinely cannot be expressed as code, say so explicitly
+  and show the surrounding call site.
+- **Measurement is mandatory, not speculative.** Do not write "may improve speed" or
+  "may reduce size". Apply the change in isolation and measure: release binary size
+  via `cargo bloat` / `ls -l target/release/<bin>` (or `cargo llvm-lines` where
+  relevant), and speed via the repo's own benchmark/profiling harness if one exists.
+  Record real before/after numbers in `Measured impact`. If you cannot measure in
+  this environment, mark the candidate `unmeasured` and name exactly which
+  measurement is missing.
+- **`Verification / test` names the specific existing test or scenario** that guards
+  the change, plus the command to run it (e.g. `just test && just check`). If no
+  test exists, say so and specify the regression to add.
+- **De-duplicate across passes.** If another prompt already reported the same
+  candidate, emit a cross-reference (`dup of <prompt>-<N>`) instead of a duplicate
+  block.
 
 Each candidate is A/B tested individually by the coordinator for **speed** and
 **release binary size** (correctness gate first). Give enough detail that the change

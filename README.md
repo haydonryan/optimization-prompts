@@ -36,27 +36,32 @@ optimization-prompts/
 ├── SKILL.md              # the optimization coordinator skill (root)
 ├── rust/                 # concern-specific prompts, one per optimization concern
 │   ├── allocation-elimination.md
-│   ├── ownership-clone-copy.md
-│   ├── collections-data-structures.md
-│   ├── monomorphization.md
-│   ├── string-formatting-parsing.md
 │   ├── async-future-state.md
-│   ├── struct-enum-layout.md
-│   ├── data-structure-optimization-audit.md
-│   ├── control-flow-generated-code.md
 │   ├── bounds-checks-iteration.md
-│   ├── repeated-work-algorithmic.md
+│   ├── codegen-flags.md
+│   ├── collections-data-structures.md
+│   ├── compact-idiomatic-code.md
+│   ├── control-flow-generated-code.md
+│   ├── data-structure-optimization-audit.md
+│   ├── dependency-feature-reduction.md
+│   ├── dry-code-reduction.md
+│   ├── hasher-selection.md
 │   ├── initialization-buffer-reuse.md
 │   ├── inlining-cold-code.md
-│   ├── synchronization.md
-│   ├── serialization.md
+│   ├── io-syscall-reduction.md
 │   ├── logging-diagnostics.md
-│   ├── structural-review.md
-│   ├── compact-idiomatic-code.md
-│   ├── dry-code-reduction.md
 │   ├── memory-retained-peak.md
-│   ├── dependency-feature-reduction.md
-│   └── release-profile-binary-size.md
+│   ├── monomorphization.md
+│   ├── ownership-clone-copy.md
+│   ├── parallelism-exploitation.md
+│   ├── release-profile-binary-size.md
+│   ├── repeated-work-algorithmic.md
+│   ├── serialization.md
+│   ├── simd-vectorization.md
+│   ├── string-formatting-parsing.md
+│   ├── structural-review.md
+│   ├── struct-enum-layout.md
+│   └── synchronization.md
 └── cpp/                 # future
     └── ...
 ```
@@ -110,7 +115,11 @@ Every prompt enforces a shared invariant regardless of concern:
 
 - Each found optimization is **classified** (category, file, site, semantic risk,
   expected impact).
-- Each is **A/B tested individually** for speed and release binary size.
+- Each candidate includes **concrete before/after code** (not prose) and names the
+  **specific verification test / scenario** that guards the change.
+- Each is **A/B tested individually** for speed and release binary size; `Measured
+  impact` records real before/after numbers — measurement is mandatory, never
+  speculative.
 - Correctness and 100% relevant-source coverage are always required.
 
 ## Adding a prompt
