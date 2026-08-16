@@ -42,6 +42,7 @@ optimization-prompts/
 │   ├── string-formatting-parsing.md
 │   ├── async-future-state.md
 │   ├── struct-enum-layout.md
+│   ├── data-structure-optimization-audit.md
 │   ├── control-flow-generated-code.md
 │   ├── bounds-checks-iteration.md
 │   ├── repeated-work-algorithmic.md
@@ -52,6 +53,7 @@ optimization-prompts/
 │   ├── logging-diagnostics.md
 │   ├── structural-review.md
 │   ├── compact-idiomatic-code.md
+│   ├── dry-code-reduction.md
 │   ├── memory-retained-peak.md
 │   ├── dependency-feature-reduction.md
 │   └── release-profile-binary-size.md
