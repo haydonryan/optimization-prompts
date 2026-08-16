@@ -65,11 +65,12 @@ merging reasoning.
 
 ## Step 5 — A/B test each candidate
 
-A/B test every candidate individually: correctness gate → release binary size →
-speed, per target architecture. Do not claim a win from reasoning alone (see the
-A/B-only gates in the empirical prompts). Mark unmeasured candidates `unmeasured`
-with the missing measurement named; never silently drop a LOW candidate for being
-small.
+**A/B testing is MANDATORY for every HIGH and MEDIUM candidate.** No HIGH or MEDIUM
+candidate may be reported as accepted from reasoning alone — it must be built and
+measured (correctness gate → release binary size → speed, per target architecture).
+LOW candidates must also be A/B tested where a harness exists; if a LOW candidate is
+not measured, mark it `unmeasured` with the missing measurement named, but never
+silently claim a win from reasoning alone.
 
 ## Step 6 — Produce the complete detailed report
 
@@ -96,8 +97,12 @@ Report structure:
 
 - **Executive summary** of the highest-signal findings and a recommended execution
   order.
-- **HIGH** candidates (full detail), **MEDIUM** (full detail), **LOW** (carry code +
-  remediation + impact, but may be compact).
+- **Every candidate — HIGH, MEDIUM, and LOW — carries the FULL contract**, including
+  both `Current code (before)` and `Proposed code (after)`. No priority may be reduced
+  to a summary-only bullet list or a bare title/impact line; a LOW candidate still
+  gets its existing code and its proposed change, exactly like HIGH and MEDIUM.
+  Compactness applies only to prose length, never to omitting the code or the
+  proposed change.
 - Every candidate's status: `accepted` / `rejected` / `unmeasured` (with the missing
   measurement named).
 - A coverage + A/B summary: candidates discovered / A/B tested / accepted / rejected /
@@ -113,4 +118,5 @@ The only output is the report — do **not** create tracker stories.
 - Do not add `unsafe` for optimization without strong measured evidence that safe
   Rust cannot achieve the same result, plus documented invariants and tests.
 - Do not accept a plausible-looking change without A/B measurement — and do not drop
-  a LOW candidate just because it is small.
+  a LOW candidate just because it is small, and do not report a LOW candidate without
+  its full `Current code (before)` + `Proposed code (after)` contract.

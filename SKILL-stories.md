@@ -89,6 +89,10 @@ underlying change, merging reasoning into one candidate.
 
 **Every improvement MUST be measured, and the measurement is only complete when the
 full matrix is reported.** A candidate is not "done" until its matrix row exists.
+This is MANDATORY for every HIGH and MEDIUM candidate: a HIGH or MEDIUM candidate is
+not eligible for a backlog story until it has passed the full LTO × arch A/B matrix.
+LOW candidates must also be A/B tested where a harness exists; if a LOW candidate is
+unmeasured, mark it `unmeasured` and do not create a story for it.
 
 For each candidate:
 

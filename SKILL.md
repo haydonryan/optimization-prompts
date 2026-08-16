@@ -118,6 +118,10 @@ often find one issue). Merge them into a single candidate preserving all reasoni
 
 **Every viable candidate is A/B tested individually for both speed and release
 binary size.** One candidate per experiment; never batch unrelated changes.
+**A/B testing is MANDATORY for every HIGH and MEDIUM candidate** — no HIGH or MEDIUM
+candidate may be accepted from reasoning alone; it must be built and measured. LOW
+candidates are A/B tested where a harness exists and otherwise marked `unmeasured`
+with the missing measurement named.
 
 For each candidate:
 
