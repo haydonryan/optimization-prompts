@@ -133,6 +133,11 @@ result, and the accept decision. Report coverage, candidates discovered / A/B te
 accepted / rejected / inconclusive, and the original vs final release binary per
 (LTO, arch) cell.
 
+Write any report file to the **root of the repository** (the shared checkout / the
+`main` branch), **not** the worktree — worktrees are disposable and are removed at
+wrap-up, so a report left in a worktree is lost. The final report must land on the
+repo's `main` (or wherever the user specifies) so it is preserved.
+
 ## Constraints
 
 - This mode only optimizes **source and build configuration** — do not change the
