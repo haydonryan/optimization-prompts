@@ -66,17 +66,31 @@ Semantic risk (what could break / what to verify):
 
 Requirements:
 
-- **Code is mandatory.** `Current code (before)` and `Proposed code (after)` MUST be
-  concrete, apply-able code snippets (Rust unless stated otherwise) — not prose
-  summaries. If a candidate genuinely cannot be expressed as code, say so explicitly
-  and show the surrounding call site.
-- **Measurement is mandatory, not speculative.** Do not write "may improve speed" or
-  "may reduce size". Apply the change in isolation and measure: release binary size
-  via `cargo bloat` / `ls -l target/release/<bin>` (or `cargo llvm-lines` where
-  relevant), and speed via the repo's own benchmark/profiling harness if one exists.
-  Record real before/after numbers in `Measured impact`. If you cannot measure in
-  this environment, mark the candidate `unmeasured` and name exactly which
-  measurement is missing.
+- **Code is mandatory — the FULL section, not a fragment.** `Current code (before)`
+  and `Proposed code (after)` MUST each contain the COMPLETE enclosing function,
+  method, or block — the full signature plus every statement/expression — together
+  with enough surrounding context (relevant types, imports, and call sites) that the
+  coordinator can apply the change verbatim without opening any other file. No
+  ellipses (`...`), no truncated bodies, no single-line paraphrases, no prose standing
+  in for code. If the change spans a whole type, module, or Cargo/profile block, show
+  the complete before and after of that unit. A candidate whose before/after omits any
+  part of the affected code is INCOMPLETE — the coordinator MUST reject it rather than
+  reconstruct it.
+- **Measurement is mandatory for BOTH binary size AND runtime performance — never
+  speculative.** Do not write "may improve speed" or "may reduce size". Every candidate
+  carries real before/after numbers for BOTH:
+    - **release binary size** via `ls -l target/release/<bin>` / `cargo bloat` /
+      `cargo llvm-lines`; and
+    - **runtime performance** via the repo's benchmark harness if one exists, otherwise
+      a concrete named microbenchmark or representative workload you specify with the
+      exact command (e.g. `hyperfine 'sort large.txt'`, `perf stat`, `time`), run enough
+      repetitions to beat noise.
+  Record both in `Measured impact`. Do NOT default to `unmeasured`: every candidate must
+  have a named performance measurement and a real before/after number. If a candidate
+  genuinely has no measurable runtime path (e.g. a pure build/profile-flag change), say
+  so explicitly and give the size result with that note. If the coordinator cannot
+  measure in this environment, it marks the candidate `unmeasured` and names exactly
+  which measurement is missing — but that is the exception, not the default.
 - **Measure on the target architectures.** A/B results are architecture-specific:
   layout, alignment, `target-cpu`, and vectorization differ between `x86_64` and
   `aarch64`. Build and measure on every arch the software ships on (commonly both).

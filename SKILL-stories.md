@@ -85,6 +85,14 @@ function / site, current vs proposed implementation, semantic risk, and expected
 impact (HIGH / MEDIUM / LOW). Deduplicate candidates that describe the same
 underlying change, merging reasoning into one candidate.
 
+**Full code is a hard gate.** Every candidate MUST arrive with COMPLETE
+`Current code (before)` and `Proposed code (after)` — the full enclosing function,
+method, or block (full signature + every statement) plus enough surrounding context
+(types, imports, call sites) to apply verbatim without opening another file. No
+ellipses, no truncated bodies, no single-line paraphrases, no prose standing in for
+code. When a subagent returns a summary-only candidate or a fragment, the coordinator
+MUST send it back to be completed — it must NOT reconstruct, infer, or accept it.
+
 ## Step 5 — A/B test with the LTO × architecture matrix
 
 **Every improvement MUST be measured, and the measurement is only complete when the
@@ -100,8 +108,13 @@ For each candidate:
    test`. If it changes externally observable behavior, reject it.
 2. **Binary size — full matrix.** Build with `lto = false` and `lto = true` (fat) on
    `x86_64`, and cross-compile both for `aarch64`. Record all four size values.
-3. **Speed.** Run the repo's benchmark on each (LTO, arch) cell you can measure
-   natively (or via `qemu-*` emulation, flagged as such). Multiple runs to beat noise.
+3. **Speed.** Measure runtime performance on each (LTO, arch) cell you can measure
+   natively (or via `qemu-*` emulation, flagged as such), multiple runs to beat
+   noise. Use the repo's benchmark harness when it exists; if none covers the
+   affected path, PROVISION one (a named microbenchmark or a representative workload
+   with an exact command such as `hyperfine 'sort large.txt'` / `perf stat`). Speed
+   measurement is mandatory for every candidate — `unmeasured` speed is the exception,
+   not the default, and when unavoidable it MUST name the missing measurement.
 
 Acceptance rules:
 
@@ -121,9 +134,11 @@ For every accepted candidate, use the **`add-backlog-story`** skill to create a
 backlog story in the target project. Resolve the project id from live tracker data
 (`tracker-cli project list --json`); do not guess. Each story MUST embed:
 
-- the concrete **flagged code (before)** and **proposed code (after)**
+- the concrete **flagged code (before)** and **proposed code (after)** — the COMPLETE
+  enclosing function/section (full signature + every statement), never a fragment or
+  prose summary, so the implementer can apply it verbatim
 - the **full A/B matrix as acceptance evidence** (LTO off/on × x86_64/aarch64 ×
-  size/speed)
+  size/speed) with the real before/after numbers
 - the **verification command** (e.g. `just test && just check`)
 - non-goals (where scope could sprawl) and the specific regression test to add
 

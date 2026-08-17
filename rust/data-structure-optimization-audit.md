@@ -228,13 +228,25 @@ measure, be explicit that the claim is unmeasured.
 This audit does **not** implement changes, so it cannot run before/after A/Bs itself.
 Resolve that tension explicitly:
 
-* Provide the **current baseline** as precisely as you can (measured `size_of`,
-  profiled allocations where the harness exists).
-* For each Tier 1/2 recommendation, specify the **A/B to run during implementation**:
-  the metric (`size_of`, allocation count, peak RSS, serialization bytes) and the
-  acceptance threshold. Do not assume a smaller struct is automatically faster.
+* Provide the **current baseline** as precisely as you can — a **measured** `size_of`
+  (or `std::mem::size_of` value you ran), measured allocations / peak RSS where the
+  harness exists. Do not estimate what you can measure; if you could not run a
+  measurement, say which one is missing rather than guessing.
+* For each Tier 1/2 recommendation, specify the **A/B to run during implementation**
+  covering BOTH dimensions:
+    - **memory**: the metric (`size_of`, allocation count, peak RSS, serialization
+      bytes) and the acceptance threshold; and
+    - **runtime performance**: a concrete named benchmark or representative workload
+      with the exact command (e.g. `hyperfine 'tool large.txt'`, `perf stat`, the
+      repo's bench harness), run enough repetitions to beat noise, plus the
+      acceptance threshold.
+  Do not assume a smaller struct is automatically faster — the performance number must
+  actually be measured at implementation time and recorded.
 * Reject changes whose added complexity or likely runtime regression outweighs the
   realistic benefit, even if they shrink memory.
+* Every Tier 1/2 finding must also carry COMPLETE `Current code (before)` and
+  `Proposed code (after)` — the full enclosing type/function/block, not a fragment —
+  so the handoff can be applied verbatim without re-reading the source.
 
 ## Compatibility verification
 
@@ -287,6 +299,7 @@ Rank:
 Location:
 Structure:
 Current representation:
+Current code (before):       (COMPLETE enclosing type/function/block — full section)
 Observed problem:
 
 Current size:
@@ -295,12 +308,13 @@ Estimated population:        (evidence or [INFERENCE])
 Estimated aggregate cost:
 
 Proposed representation:
+Proposed code (after):       (COMPLETE enclosing type/function/block — full section)
 
 Expected size:
 Expected memory saving:
 Expected runtime effect:
 Expected allocation reduction:
-A/B to run during implementation:   (metric + acceptance threshold)
+A/B to run during implementation:   (memory metric + runtime-performance metric, both with acceptance thresholds)
 
 File-format / API compatibility:
 Compatibility strategy:
@@ -317,6 +331,12 @@ Recommendation:
 ```
 
 Include concrete source locations (e.g. `src/index/node.rs:47`).
+
+**Full code is mandatory for Tier 1/2 findings.** `Current code (before)` and
+`Proposed code (after)` MUST each contain the complete enclosing function, method, or
+type — full signature plus every statement/field — with enough surrounding context
+(types, imports, call sites) to apply verbatim. No ellipses, no truncated bodies, no
+prose standing in for code. A finding that omits full before/after code is incomplete.
 
 ### Compact format (Tier 3/4)
 

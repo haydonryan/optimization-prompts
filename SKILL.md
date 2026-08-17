@@ -114,14 +114,25 @@ Collect every candidate. Each candidate must be classified with:
 Deduplicate candidates that describe the same underlying change (different specialists
 often find one issue). Merge them into a single candidate preserving all reasoning.
 
+**Full code is a hard gate.** Every candidate MUST arrive with COMPLETE
+`Current code (before)` and `Proposed code (after)` — the full enclosing function,
+method, or block (full signature + every statement) plus enough surrounding context
+(types, imports, call sites) to apply verbatim without opening another file. No
+ellipses, no truncated bodies, no single-line paraphrases, no prose standing in for
+code. When a subagent returns a summary-only candidate or a fragment, the coordinator
+MUST send it back to be completed — it must NOT reconstruct, infer, or accept it.
+
 ## Step 5 — A/B test every candidate individually
 
-**Every viable candidate is A/B tested individually for both speed and release
-binary size.** One candidate per experiment; never batch unrelated changes.
-**A/B testing is MANDATORY for every HIGH and MEDIUM candidate** — no HIGH or MEDIUM
-candidate may be accepted from reasoning alone; it must be built and measured. LOW
-candidates are A/B tested where a harness exists and otherwise marked `unmeasured`
-with the missing measurement named.
+**Every viable candidate is A/B tested individually for BOTH speed AND release binary
+size.** One candidate per experiment; never batch unrelated changes.
+**A/B testing is MANDATORY for every candidate — HIGH, MEDIUM, and LOW** — no
+candidate may be accepted from reasoning alone; it must be built and measured for
+both size and speed. If the repo has no performance harness for the affected path,
+the coordinator MUST provision one (a named microbenchmark or representative workload
+with an exact command, e.g. `hyperfine 'sort large.txt'` / `perf stat`) rather than
+leaving speed unmeasured. `unmeasured` is the exception, not the default, and MUST
+name exactly which size and/or speed measurement is missing and on which arch.
 
 For each candidate:
 
@@ -183,10 +194,13 @@ Original allocation count:
 Final allocation count:
 ```
 
-For each accepted candidate give: file, function, category, original → experimental
-source, reasoning, semantic validation, test status, binary-size delta, speed delta,
-allocations delta, and ACCEPT/REJECT/TRADEOFF decision with explanation. Rank accepted
-optimizations by actual measured benefit.
+For each candidate — accepted, rejected, or tradeoff — give: file, function, category,
+COMPLETE `Current code (before)` and `Proposed code (after)` (full sections, never
+fragments), reasoning, semantic validation, test status, measured binary-size delta,
+measured speed delta, allocations delta, and ACCEPT/REJECT/TRADEOFF decision with
+explanation. Rank accepted optimizations by actual measured benefit. Every candidate
+in the report carries real before/after numbers for BOTH size and speed; do not omit
+code or measurements from any candidate.
 
 ## Constraints
 

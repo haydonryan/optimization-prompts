@@ -63,14 +63,35 @@ current vs proposed implementation, semantic risk, and expected impact. **Keep e
 candidate, including LOW.** Deduplicate candidates that describe the same change,
 merging reasoning.
 
+**Full code is a hard gate.** Every candidate MUST arrive with COMPLETE
+`Current code (before)` and `Proposed code (after)` — the full enclosing function,
+method, or block (full signature + every statement) plus enough surrounding context
+(types, imports, call sites) to apply verbatim without opening another file. No
+ellipses, no truncated bodies, no single-line paraphrases, no prose standing in for
+code. When a subagent returns a summary-only candidate or a fragment, the coordinator
+MUST send it back to be completed — it must NOT reconstruct, infer, or accept it.
+
 ## Step 5 — A/B test each candidate
 
-**A/B testing is MANDATORY for every HIGH and MEDIUM candidate.** No HIGH or MEDIUM
-candidate may be reported as accepted from reasoning alone — it must be built and
-measured (correctness gate → release binary size → speed, per target architecture).
-LOW candidates must also be A/B tested where a harness exists; if a LOW candidate is
-not measured, mark it `unmeasured` with the missing measurement named, but never
-silently claim a win from reasoning alone.
+**A/B testing is MANDATORY for every candidate — HIGH, MEDIUM, and LOW — and it must
+cover BOTH binary size AND runtime performance.** No candidate may be reported as
+accepted (or as a claimed win) from reasoning alone. For each candidate, apply it in
+isolation, run the correctness gate (`cargo test` / `just test && just check`), then
+record real before/after numbers for BOTH:
+
+- **release binary size** — `ls -l target/release/<bin>` / `cargo bloat` /
+  `cargo llvm-lines`, per target architecture; and
+- **runtime performance** — the repo's own benchmark harness if one exists; otherwise
+  build or run a concrete named microbenchmark / representative workload with the
+  exact command (e.g. `hyperfine 'sort large.txt'`, `perf stat`, `time`), multiple
+  runs to beat noise.
+
+If the repo has no performance harness for the affected path, the coordinator MUST
+provision one (a benchmark, a representative workload, or a runnable script) rather
+than leaving performance unmeasured. `unmeasured` is the exception, not the default:
+it may only be recorded when a measurement is genuinely impossible in the
+environment, and it MUST name exactly which measurement (size and/or speed, and on
+which arch) is missing.
 
 ## Step 6 — Produce the complete detailed report
 
@@ -98,13 +119,16 @@ Report structure:
 - **Executive summary** of the highest-signal findings and a recommended execution
   order.
 - **Every candidate — HIGH, MEDIUM, and LOW — carries the FULL contract**, including
-  both `Current code (before)` and `Proposed code (after)`. No priority may be reduced
-  to a summary-only bullet list or a bare title/impact line; a LOW candidate still
-  gets its existing code and its proposed change, exactly like HIGH and MEDIUM.
-  Compactness applies only to prose length, never to omitting the code or the
-  proposed change.
-- Every candidate's status: `accepted` / `rejected` / `unmeasured` (with the missing
-  measurement named).
+  both `Current code (before)` and `Proposed code (after)` (complete sections, never
+  fragments) and a real `Measured impact` with actual before/after numbers for BOTH
+  binary size and runtime performance per arch. No priority may be reduced to a
+  summary-only bullet list or a bare title/impact line; a LOW candidate still gets
+  its existing code, its proposed change, and its measured numbers, exactly like HIGH
+  and MEDIUM. Compactness applies only to prose length, never to omitting the code or
+  the measurements.
+- Every candidate's status: `accepted` / `rejected` / `tradeoff` / `unmeasured` (the
+  last only when measurement is genuinely impossible, with exactly which size and/or
+  speed measurement is missing and on which arch named).
 - A coverage + A/B summary: candidates discovered / A/B tested / accepted / rejected /
   inconclusive, and original vs final release binary per arch.
 
