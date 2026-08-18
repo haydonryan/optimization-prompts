@@ -82,8 +82,8 @@ optimization-prompts/
 │   ├── structural-review.md
 │   ├── struct-enum-layout.md
 │   └── synchronization.md
-└── cpp/                 # future
-    └── ...
+└── cpp/                 # C++ prompts
+    └── ownership-raii.md  # memory leaks + manual ownership → RAII
 ```
 
 Language roots exist only when they have at least one prompt. A category that applies

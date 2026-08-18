@@ -19,13 +19,16 @@ externally observable behavior preserved.
 Determine the target codebase language from its manifest:
 
 - `Cargo.toml` (or `src/**/*.rs`, a Cargo workspace) → **Rust**
-- A future `cpp/` directory plus a C++ build manifest (`CMakeLists.txt`,
-  `meson.build`, `Makefile`, …) → **C++**
+- A `cpp/` directory plus a C++ build manifest (`CMakeLists.txt`, `meson.build`,
+  `Makefile`, …) → **C++**
 
 Only run prompts for a language whose directory exists in this repo. If the language
 is not yet supported, say so and stop — do not invent prompts.
 
-For this iteration, Rust is supported. The prompt files live in `rust/`.
+Supported languages and prompt locations:
+
+- Rust → `rust/`
+- C++ → `cpp/`
 
 ## Operating model
 
@@ -52,7 +55,9 @@ Produce final report
 
 ## Step 1 — Establish the baseline
 
-Before touching code, record a reproducible baseline with the repo's own commands:
+Before touching code, record a reproducible baseline with the repo's own commands.
+
+**Rust:**
 
 ```bash
 cargo test                 # correctness baseline
@@ -61,27 +66,50 @@ size <release-binary>      # or: stat -c %s, cargo bloat, cargo llvm-lines
 cargo bench / hyperfine / time  # representative speed where available
 ```
 
+Build the binary-size map with `cargo bloat --release --crates` and `--functions`,
+`cargo llvm-lines`, `nm`, `objdump` where available.
+
+**C++:**
+
+```bash
+cmake --build build --config Release     # or the repo's build command
+ctest --test-dir build                   # correctness baseline
+size <release-binary>                    # or: stat -c %s, nm -S --size-sort
+hyperfine / time ./<binary> [args]       # representative speed
+valgrind --leak-check=full --show-leak-kinds=all ./<binary>  # leak baseline
+```
+
+Build the binary-size map with `nm -S --size-sort <binary>`, `size -A <binary>`,
+`bloaty`, or `objdump` where available.
+
 Record exact commands and numbers so A/B comparisons stay comparable. Also record,
 where practical: `.text`, `.rodata`, `.data`, allocation count/bytes, peak memory,
-instruction count. Build the binary-size map with `cargo bloat --release --crates`
-and `--functions`, `cargo llvm-lines`, `nm`, `objdump` where available.
+instruction count.
 
 ## Step 2 — Enumerate relevant source files
 
-Build a **coverage ledger** covering every relevant Rust file:
+Build a **coverage ledger** covering every relevant source file for the detected
+language:
 
 ```text
+# Rust
 src/**/*.rs
 crates/**/src/**/*.rs
 benches/**/*.rs
 examples/**/*.rs
 build.rs
 tests/**/*.rs
+
+# C++
+src/**/*.{cpp,h,hpp,cc,cxx}
+include/**/*.{h,hpp}
+lib/**/*.{cpp,h,hpp}
+test*/**/*.{cpp,h,hpp}
 ```
 
-Exclude generated source, vendored dependencies, `target/`, and external submodules.
-A file is not "analyzed" merely because a search matched nothing — a subagent must
-inspect its contents. The pass is not complete until coverage is 100%.
+Exclude generated source, vendored dependencies, `target/`, `build/`, and external
+submodules. A file is not "analyzed" merely because a search matched nothing — a
+subagent must inspect its contents. The pass is not complete until coverage is 100%.
 
 ## Step 3 — Dispatch one subagent per prompt
 
@@ -136,15 +164,19 @@ name exactly which size and/or speed measurement is missing and on which arch.
 
 For each candidate:
 
-1. **Correctness gate first.** Apply only this candidate in isolation, then run
-   `cargo test` (plus workspace/integration/property tests as available). If it
+1. **Correctness gate first.** Apply only this candidate in isolation, then run the
+   language-appropriate tests — `cargo test` for Rust, `ctest` (or the repo's test
+   target) for C++ — plus workspace/integration/property tests as available. If it
    changes externally observable behavior, reject it.
-2. **Release binary size.** Rebuild `cargo build --release` under identical
-   conditions. Record exact byte size; compare to the baseline. Binary-size deltas
-   are deterministic given the same build environment.
+2. **Release binary size.** Rebuild under identical conditions — `cargo build
+   --release` for Rust, the release CMake/Make target for C++ — and record exact byte
+   size. Binary-size deltas are deterministic given the same build environment.
 3. **Speed.** Run the repo's benchmark or a representative microbenchmark around the
-   affected path, multiple runs to beat noise. Use `cargo bench`, `hyperfine`, or
-   `perf stat`. Do not claim a runtime win from an unstable single run.
+   affected path, multiple runs to beat noise. Use `cargo bench`, `hyperfine`,
+   `perf stat`, or a C++ benchmark harness. Do not claim a runtime win from an
+   unstable single run.
+4. **Memory/leaks (C++ where relevant).** For memory-safety candidates, re-run the
+   Valgrind/ASan baseline to confirm the leak count/bytes dropped.
 4. **Allocations/memory** where the candidate targets them — measure allocation
    count/bytes if instrumentation exists.
 
