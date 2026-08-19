@@ -30,6 +30,12 @@ Supported languages and prompt locations:
 - Rust → `rust/`
 - C++ → `cpp/`
 
+**Infrastructure concerns** (not a source language) are dispatched separately:
+
+- **Docker** → `docker/` — whenever a `Dockerfile`, `*.Dockerfile`,
+  `docker-compose.yml`, or `deploy/*.Dockerfile` is present, dispatch these prompts in
+  addition to the source-language pass.
+
 ## Operating model
 
 ```text
@@ -105,6 +111,13 @@ src/**/*.{cpp,h,hpp,cc,cxx}
 include/**/*.{h,hpp}
 lib/**/*.{cpp,h,hpp}
 test*/**/*.{cpp,h,hpp}
+
+# Docker (infrastructure)
+Dockerfile
+**/*.Dockerfile
+docker-compose.yml
+**/docker-compose*.yml
+.dockerignore
 ```
 
 Exclude generated source, vendored dependencies, `target/`, `build/`, and external
@@ -113,8 +126,10 @@ subagent must inspect its contents. The pass is not complete until coverage is 1
 
 ## Step 3 — Dispatch one subagent per prompt
 
-For each prompt file in `<language>/` (e.g. `rust/*.md`), spawn a subagent whose job
-is to run **that single prompt** against the codebase. Give each subagent:
+Dispatch the source-language prompts, and additionally the `docker/` prompts when
+Dockerfiles are present. For each prompt file in `<language>/` (e.g. `rust/*.md`) or
+`docker/`, spawn a subagent whose job is to run **that single prompt** against the
+codebase. Give each subagent:
 
 - the absolute path to its prompt file,
 - the repository path,
@@ -179,6 +194,11 @@ For each candidate:
    Valgrind/ASan baseline to confirm the leak count/bytes dropped.
 4. **Allocations/memory** where the candidate targets them — measure allocation
    count/bytes if instrumentation exists.
+5. **Docker (where relevant).** For Dockerfile candidates the metrics are **final
+   image size** (`docker images <tag>`, or compressed via `docker save | gzip | wc -c`
+   / `skopeo`), **build time** with a warm cache, and **layer count**; correctness is
+   that the container still builds and passes its healthcheck. A/B each candidate
+   individually as above.
 
 Decide with these rules:
 
