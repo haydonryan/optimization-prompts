@@ -57,7 +57,9 @@ Accept or reject
         ↓
 Update baseline
         ↓
-Rescan for second-order opportunities
+Rescan: run a second full pass on the optimized code
+        ↓
+        └─ repeat until a pass yields no newly accepted optimizations
         ↓
 Produce final report
 ```
@@ -225,10 +227,39 @@ Decide with these rules:
   breaks tests, worsens memory, or provides no measurable benefit. Record rejected
   experiments — they are useful information.
 
-After each accepted candidate, rebuild the baseline and proceed to the next. After
-accepted changes accumulate, rescan for second-order opportunities (API, ownership,
-generic, async, collection, parser changes can expose new wins or revive previously
-rejected candidates).
+After each accepted candidate, rebuild the baseline and proceed to the next.
+
+## Second pass — iterate to convergence
+
+**One pass is not enough.** After every candidate in the first pass has been accepted
+or rejected, apply a **second full optimization pass to the now-optimized code**. A
+change accepted in one pass frequently reshapes code (APIs, ownership, generics,
+async state, collections, parsers, hot paths) in ways that expose further
+optimizations — and can revive candidates that were rejected earlier because their
+prerequisite was absent. In practice a second pass on already-optimized code finds
+additional measurable improvements.
+
+Run each pass exactly like the first:
+
+1. Re-establish the baseline on the current (already-optimized) code — tests,
+   release binary size, speed — since measurements from the prior pass no longer
+   reflect the working tree.
+2. Re-enumerate and re-dispatch all prompts (Steps 2–3), because the changed code
+   contains new sites and new opportunities.
+3. Collect, classify, and deduplicate new candidates, then A/B test **every** new
+   candidate individually for speed and release binary size (Step 5) against the new
+   baseline.
+4. Accept/reject, update the baseline, and repeat.
+
+**Stop when a full pass produces zero newly accepted optimizations** (convergence).
+Do not keep looping forever — a pass with no new accepts is the natural stopping
+point. If a second pass is not run, the report MUST say why (e.g. scope/time limit)
+and the results are reported as partial.
+
+The final report reports **cumulative** results across all passes: the true starting
+baseline (pre-pass-1) through the final binary/benchmark, plus a per-pass breakdown
+of candidates discovered/accepted/rejected. Rank accepted optimizations across all
+passes by actual measured benefit.
 
 ## Step 6 — Final report
 
