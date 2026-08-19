@@ -35,6 +35,9 @@ Supported languages and prompt locations:
 - **Docker** → `docker/` — whenever a `Dockerfile`, `*.Dockerfile`,
   `docker-compose.yml`, or `deploy/*.Dockerfile` is present, dispatch these prompts in
   addition to the source-language pass.
+- **General / cross-cutting** → `general/` — dispatched on every run, alongside the
+  source-language and Docker passes. These scan the whole repo for language-independent
+  patterns (e.g. compression commands).
 
 ## Operating model
 
@@ -118,6 +121,14 @@ Dockerfile
 docker-compose.yml
 **/docker-compose*.yml
 .dockerignore
+
+# General (cross-cutting)
+**/*.sh
+**/*.bash
+Makefile
+Justfile
+.github/workflows/**/*.yml
+**/*.yml
 ```
 
 Exclude generated source, vendored dependencies, `target/`, `build/`, and external
@@ -126,10 +137,10 @@ subagent must inspect its contents. The pass is not complete until coverage is 1
 
 ## Step 3 — Dispatch one subagent per prompt
 
-Dispatch the source-language prompts, and additionally the `docker/` prompts when
-Dockerfiles are present. For each prompt file in `<language>/` (e.g. `rust/*.md`) or
-`docker/`, spawn a subagent whose job is to run **that single prompt** against the
-codebase. Give each subagent:
+Dispatch the source-language prompts, plus the `docker/` prompts when Dockerfiles are
+present and the `general/` prompts on every run. For each prompt file in
+`<language>/` (e.g. `rust/*.md`), `docker/`, or `general/`, spawn a subagent whose job
+is to run **that single prompt** against the codebase. Give each subagent:
 
 - the absolute path to its prompt file,
 - the repository path,

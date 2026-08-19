@@ -84,8 +84,10 @@ optimization-prompts/
 │   └── synchronization.md
 ├── cpp/                 # C++ prompts
 │   └── ownership-raii.md  # memory leaks + manual ownership → RAII
-└── docker/              # infrastructure prompts (dispatched when Dockerfiles present)
-    └── dockerfile-minimization.md  # multi-stage, minimal runtime image
+├── docker/              # infrastructure prompts (dispatched when Dockerfiles present)
+│   └── dockerfile-minimization.md  # multi-stage, minimal runtime image
+└── general/             # cross-cutting prompts (dispatched on every run)
+    └── compression-level.md  # compression commands without an explicit level
 ```
 
 Language roots exist only when they have at least one prompt. A category that applies
