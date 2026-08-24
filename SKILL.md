@@ -167,8 +167,13 @@ Collect every candidate. Each candidate must be classified with:
 - expected semantic risk
 - expected impact: HIGH / MEDIUM / LOW
 
-Deduplicate candidates that describe the same underlying change (different specialists
-often find one issue). Merge them into a single candidate preserving all reasoning.
+**Balance across optimization dimensions.** Optimization spans many dimensions —
+binary size, runtime speed, codegen, monomorphization, data layout, control flow,
+algorithmics, AND heap allocations. Heap-allocation findings are easy to over-report;
+do not let them crowd out the other dimensions. When a source-codebase's hot path is
+already allocation-free (per-byte/per-item loops allocate nothing), say so and do not
+manufacture low-value allocation candidates. Prioritize candidates that improve
+multiple dimensions at once (less code AND fewer allocations AND less work).
 
 **Full code is a hard gate.** Every candidate MUST arrive with COMPLETE
 `Current code (before)` and `Proposed code (after)` — the full enclosing function,
@@ -188,7 +193,14 @@ both size and speed. If the repo has no performance harness for the affected pat
 the coordinator MUST provision one (a named microbenchmark or representative workload
 with an exact command, e.g. `hyperfine 'sort large.txt'` / `perf stat`) rather than
 leaving speed unmeasured. `unmeasured` is the exception, not the default, and MUST
-name exactly which size and/or speed measurement is missing and on which arch.
+**Exception — build-configuration candidates are NOT A/B-benchmarked.** Candidates
+whose category is `codegen-flags` or `release-profile-binary-size` (LTO, `-C` flags,
+`RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and low-risk:
+binary size is fixed for a given build and they are not source transformations. The
+coordinator applies each such suggestion in isolation, confirms the build and the
+repo's test gate pass, and records the resulting binary size. Do **not** run the
+speed-measurement ceremony on them. If such a change plausibly affects runtime, note
+it qualitatively in the report; do not benchmark it.
 
 For each candidate:
 

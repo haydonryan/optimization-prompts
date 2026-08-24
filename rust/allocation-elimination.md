@@ -46,8 +46,29 @@ For each allocation ask: **can this allocation disappear?** Then consider:
 Pay special attention to allocations inside loops, parsers, hot paths, request
 handlers, serialization, formatting, and async loops.
 
-Do not assume a stack-backed container is automatically better — additional generic
-code can grow the binary. Propose it only as a candidate to be measured.
+## Prioritization and balance (read first)
+
+Heap allocation is only ONE optimization dimension. This pass must NOT crowd out
+the other concern passes (binary size, codegen, monomorphization, layout, control
+flow, algorithmics). Follow these rules so allocation findings stay honest:
+
+- **Weigh every allocation against the other dimensions.** Removing an allocation
+  is only a win if it does not grow code, slow the hot path, or complicate the API
+  more than it helps. `SmallVec`/`Cow`/`ArrayVec` and buffer reuse all add generic
+  code — say so when the tradeoff is not clearly positive.
+- **Filter low-value candidates.** Mark these LOW priority or skip them outright:
+  allocations on cold/rare paths (error construction, debug-only `format!`, one-time
+  setup), allocations that happen once per run (build/parse/compile time, DFA
+  construction), and allocations whose removal would complicate a public API more
+  than it is worth.
+- **If the hot path is already allocation-free, say so.** State plainly that the
+  per-search/per-byte loop allocates nothing and report at most the highest-signal
+  remaining candidates. Do NOT manufacture speculative low-value allocation
+  candidates to fill the report — a short, honest result beats a padded one.
+- **Prefer candidates that reduce allocations AND code or latency.** A candidate
+  that only saves one rare-path alloc while adding a reusable buffer field is
+  usually not worth it. Reserve HIGH for allocations on the actual hot path
+  (inside per-byte/per-item loops) that can be removed without regressing code size.
 
 ## Output contract
 

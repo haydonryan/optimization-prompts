@@ -56,7 +56,16 @@ For each prompt file in `<language>/`, spawn a subagent to run **that single pro
 against the codebase, returning candidates in the prompt's output contract. Run
 subagents in parallel up to your concurrency cap. Each subagent is read-only.
 
-## Step 4 — Collect, classify, deduplicate
+…
+
+**Balance across optimization dimensions.** Optimization spans binary size, runtime
+speed, codegen, monomorphization, data layout, control flow, algorithmics, AND heap
+allocations. Heap-allocation findings are easy to over-report; do not let them crowd
+out the other dimensions. When the hot path is already allocation-free, say so and do
+not manufacture low-value allocation candidates. Prefer candidates that improve
+multiple dimensions at once.
+
+## Step 5 — A/B test each candidate
 
 Collect every candidate. Classify each with category, file / function / site,
 current vs proposed implementation, semantic risk, and expected impact. **Keep every
@@ -89,9 +98,15 @@ record real before/after numbers for BOTH:
 If the repo has no performance harness for the affected path, the coordinator MUST
 provision one (a benchmark, a representative workload, or a runnable script) rather
 than leaving performance unmeasured. `unmeasured` is the exception, not the default:
-it may only be recorded when a measurement is genuinely impossible in the
-environment, and it MUST name exactly which measurement (size and/or speed, and on
-which arch) is missing.
+**Exception — build-configuration candidates are NOT A/B-benchmarked.** Candidates
+whose category is `codegen-flags` or `release-profile-binary-size` (LTO, `-C` flags,
+`RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and low-risk:
+binary size is fixed for a given build and they are not source transformations. Apply
+each such suggestion in isolation, confirm the build and the repo's test gate pass,
+and record the resulting binary size. Do **not** run the speed-measurement ceremony
+on them; note any plausible runtime effect qualitatively.
+
+## Step 6 — Produce the complete detailed report
 
 ## Step 6 — Produce the complete detailed report
 

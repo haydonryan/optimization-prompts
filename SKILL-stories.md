@@ -80,10 +80,12 @@ modify the codebase.
 
 ## Step 4 — Collect, classify, deduplicate
 
-Collect every candidate. Classify each with its optimization category, file /
-function / site, current vs proposed implementation, semantic risk, and expected
-impact (HIGH / MEDIUM / LOW). Deduplicate candidates that describe the same
-underlying change, merging reasoning into one candidate.
+**Balance across optimization dimensions.** Optimization spans binary size, runtime
+speed, codegen, monomorphization, data layout, control flow, algorithmics, AND heap
+allocations. Heap-allocation findings are easy to over-report; do not let them crowd
+out the other dimensions. When the hot path is already allocation-free, say so and do
+not manufacture low-value allocation candidates. Prefer candidates that improve
+multiple dimensions at once.
 
 **Full code is a hard gate.** Every candidate MUST arrive with COMPLETE
 `Current code (before)` and `Proposed code (after)` — the full enclosing function,
@@ -113,8 +115,17 @@ For each candidate:
    noise. Use the repo's benchmark harness when it exists; if none covers the
    affected path, PROVISION one (a named microbenchmark or a representative workload
    with an exact command such as `hyperfine 'sort large.txt'` / `perf stat`). Speed
-   measurement is mandatory for every candidate — `unmeasured` speed is the exception,
-   not the default, and when unavoidable it MUST name the missing measurement.
+**Exception — build-configuration candidates do NOT get the LTO × arch A/B matrix.**
+Candidates whose category is `codegen-flags` or `release-profile-binary-size` (LTO,
+`-C` flags, `RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and
+low-risk: binary size is fixed for a given build and they are not source
+transformations. Apply each such suggestion in isolation, confirm the build and the
+repo's test gate pass, and record the resulting binary size. Do **not** run the
+multi-cell speed/size matrix on them; note any plausible runtime effect qualitatively.
+Do not create a backlog story for a routine build-config tweak unless it delivers a
+clear, non-trivial, deterministic size win.
+
+Acceptance rules:
 
 Acceptance rules:
 
