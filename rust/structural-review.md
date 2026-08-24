@@ -7,7 +7,8 @@ applies_to: "*"
 
 # Structural Review
 
-You are the **structural review** specialist pass for an exhaustive Rust optimization
+run. Your objective is to find broad, architecture-level changes that reduce work —
+and shrink the compiled binary — before micro-optimizing individual functions.
 run. Your objective is to find broad, architecture-level changes that reduce work
 before micro-optimizing individual functions.
 
@@ -35,8 +36,29 @@ public APIs.
 - For long-lived collections, inspect key/value types, map choices, ordering
   requirements, and whether retained data can become borrowed, interned, indexed,
   compacted, or streamed.
-- For services and CLIs, examine startup path, config load, logging/tracing init,
-  filesystem walks, network client setup, and repeated global initialization.
+**Restructuring for binary size.** In addition to reducing work, restructure the code
+so it emits less machine code. This complements (and may overlap with) the
+monomorphization, inlining/cold-code, DRY, and control-flow passes — cross-reference
+those instead of duplicating a candidate. Focus on the size-specific restructuring
+moves:
+
+- **Dedup monomorphized bodies.** Find generic functions instantiated across many
+  concrete types with `cargo llvm-lines` (high `Copies`). Hoist the large body into
+  one shared non-generic function behind a thin generic adapter, so it is compiled
+  once per type instead of once per instantiation.
+- **Split oversized cold paths out of hot monoliths.** When a build/construction or
+  configuration function is inlined into a hot entry point (a large LTO-inlined
+  pipeline), separate the cold construction so the hot function and its icache stay
+  small.
+- **Collapse duplicated formatting.** Share `Display`/`Debug`/serialization code;
+  avoid one-off `format!` variants that each generate their own formatting machinery.
+- **Replace large `match`/`enum` dispatch that duplicates work** with shared cold
+  helpers.
+- **Use `#[inline(never)]`/`#[cold]` on rare paths** so LLVM does not duplicate them
+  into every caller.
+- **Verify with `cargo bloat --crates/--functions`, `cargo llvm-lines`, and
+  `size`/`nm`.** A size-restructuring candidate is only a win if the emitted binary
+  (or relevant `.text`/function) actually shrinks; confirm it before reporting.
 
 ## Output contract
 
