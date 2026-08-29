@@ -168,6 +168,24 @@ Write any report file to the **root of the repository** (the shared checkout / t
 wrap-up, so a report left in a worktree is lost. The final report must land on the
 repo's `main` (or wherever the user specifies) so it is preserved.
 
+## Second-order pass and cross-application
+
+After any candidate is accepted (and its story created), do NOT stop at that
+candidate:
+
+- **Re-run the originating prompt over the change.** Run the prompt (and related
+  prompts) scoped to the changed code to catch opportunities the edit itself opened
+  up — a change that removes an allocation, reshapes a hot path, or changes what a
+  shared macro inlines frequently makes a previously-inapplicable optimization apply.
+- **Cross-apply the pattern to other similar sites.** When a prompt finds an
+  optimization at one site, search the codebase for OTHER sites with the same
+  underlying pattern (same macro/helper, same `.lock()` on a global I/O handle, same
+  buffer/collection idiom, same error-construction shape) that the prompt missed, and
+  A/B test each individually (full LTO × arch matrix). The first hit is rarely the
+  only instance.
+- Each cross-apply candidate that passes the matrix becomes its own story, exactly
+  like a first-pass candidate.
+
 ## Constraints
 
 - This mode only optimizes **source and build configuration** — do not change the

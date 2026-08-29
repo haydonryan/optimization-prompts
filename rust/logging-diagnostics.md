@@ -29,8 +29,27 @@ and custom diagnostic systems. Look for:
 - strings formatted before log-level checks
 - allocations only needed for logs
 - expensive calculations performed when logging is disabled
-- repeated diagnostics
-- large generic formatting paths
+**Global I/O-handle `.lock()` bloat (fat-LTO specific).** Look for
+`std::io::stderr().lock()` / `stdout().lock()` used for a **single** diagnostic or
+output write, especially in shared macros/helpers invoked by many functions (e.g. a
+`show_error!`/`show_warning!`/`show!` macro). Under `lto = "fat"` (or "thin"), the
+`StderrLock`/`StdoutLock` guard type — its `Write` impl and its unlock+flush `Drop`
+machinery — is inlined into **every** call site, so N diagnostic-emitting functions
+each carry a few KB of per-site guard code. Removing the `.lock()` and writing
+directly to `stderr()`/`stdout()` (which take the internal reentrant lock per write)
+routes every call site through one compact shared path, shrinking the binary by
+per-site-guard × N sites. Verified real-world example: removing `.lock()` from the
+`show_*!`/`show!` diagnostic macros of uutils/coreutils shrank the fat-LTO binary by
+~110 KB across ~155 functions.
+
+**Safety rule for this pattern:** only remove `.lock()` where the handle is locked for
+a **single** write (or writes whose atomic grouping is not load-bearing). Do NOT
+remove it where the lock is held across a loop / multi-write batch / stream, or where
+the caller relies on holding the lock (that is intentional and removing it changes
+atomicity or adds per-write locking). For each candidate, name whether it is a
+single-write site (safe) or a held-lock site (keep), and A/B measure size and speed.
+
+Do **not** remove useful observability solely for size — optimize how it is produced
 
 Do **not** remove useful observability solely for size — optimize how it is produced
 (e.g. lazy argument evaluation with closures like `ok_or_else`, `with_context`, or

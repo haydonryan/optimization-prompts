@@ -261,7 +261,23 @@ Run each pass exactly like the first:
 3. Collect, classify, and deduplicate new candidates, then A/B test **every** new
    candidate individually for speed and release binary size (Step 5) against the new
    baseline.
-4. Accept/reject, update the baseline, and repeat.
+**Two refinements are mandatory after every accepted candidate:**
+
+- **Re-run the originating prompt over the change.** After a candidate is accepted
+  and applied, run its prompt (and the related prompts it touches) scoped to the
+  changed code, to find opportunities the change itself opened up. An edit frequently
+  reshapes a hot path, removes an allocation, changes what a shared macro inlines, or
+  alters collection/generic/async shape such that a previously-inapplicable
+  optimization now applies — do not wait for the next full pass to find it.
+- **Cross-apply the pattern to other similar sites.** When a prompt finds an
+  optimization at one site, actively search the codebase for OTHER sites with the
+  same underlying pattern — the same macro or helper, the same `.lock()` on a global
+  I/O handle, the same buffer/collection idiom, the same error- or diagnostic-
+  construction shape — that the prompt did not flag. The first hit is rarely the only
+  instance; A/B test each cross-apply candidate individually and keep the ones that
+  measure better. Cross-application is often where the cumulative win lives.
+
+**Stop when a full pass produces zero newly accepted optimizations** (convergence).
 
 **Stop when a full pass produces zero newly accepted optimizations** (convergence).
 Do not keep looping forever — a pass with no new accepts is the natural stopping

@@ -37,8 +37,15 @@ Look for:
   `create_dir_all` consolidation
 - full-file buffering where streaming would do (large temp `Vec<u8>`/`String` held in
   memory)
-- missing batch/flush discipline on `Write` (many tiny writes instead of one
-  buffered flush)
+- `stdout().lock()` / `stderr().lock()` taken for a **single** write (or a
+  non-load-bearing short sequence) on global I/O handles: the lock guard's `Write` +
+  unlock/flush `Drop` machinery is inlined per call site under fat-LTO, so a shared
+  diagnostic/output macro used by many functions bloats the binary by guard-code ×
+  N sites. Removing the `.lock()` routes all call sites through one compact path.
+  Only de-lock **single-write** sites — keep the lock where it is held across a loop,
+  a multi-write batch, or a stream (atomicity/streaming is load-bearing there). See
+  the logging-diagnostics prompt for the same pattern on `stderr` diagnostics.
+- `statvfs`/`stat`/metadata calls that could be cached for the poll lifetime
 - `statvfs`/`stat`/metadata calls that could be cached for the poll lifetime
 
 Prefer safe, boring changes: buffer I/O, reuse a connection, cache stable results,
