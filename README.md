@@ -5,8 +5,25 @@ A prompt library for a single, language-agnostic **optimization skill**.
 Instead of maintaining a separate skill for every optimization concern (allocation
 elimination, ownership/clone cleanup, monomorphization shrink, SIMD vectorization,
 type-system hardening, …) — and then duplicating each one for Rust, C++, and every
-future language — this repo keeps those specialist prompts in one place. The
-optimization skill reads the relevant prompt for the task at hand and runs it.
+future language — this repo keeps those specialist prompts in one place. The optimization skill reads the relevant prompt for the task at hand and runs it.
+
+## Size vs speed objectives
+
+Each language root carries **two prompt sets**, selected by the run's objective:
+
+- `<language>/` (e.g. `rust/`) — the **general/size** set. Acceptance gates on release
+  binary size; speed must not regress.
+- `<language>/speed/` (e.g. `rust/speed/`) — the **speed** set. Acceptance gates on
+  runtime speed; a candidate that is measurably faster is accepted even if the binary
+  grows (size is still measured and reported, but is not a rejection gate for a speed
+  win).
+
+Every coordinator mode takes an **objective** (`size` or `speed`, default `size`) and
+dispatches the matching set. The same codebase can be run once per objective; the two
+passes are independent. A speed pass on a hot path targets inlining, cache locality,
+allocation elimination, vectorization, branch predictability, algorithmic work,
+hashing, I/O batching, concurrency, parsing/formatting, iteration, and hoisting
+invariant setup — each measured with runtime as the primary criterion.
 
 **The repository is just prompts. The skill is the runner.** The skill owns the
 baseline/A-B measurement loop, correctness validation, and final report; each prompt
@@ -32,7 +49,9 @@ directory, then classifies and A/B tests every discovered candidate individually
 
 ## Modes
 
-Three coordinator skills share the same prompt library and differ only in output:
+Three coordinator skills share the same prompt library and differ only in output.
+Each mode also takes an **objective** (`size` or `speed`) that selects the prompt set
+it dispatches (see the size vs speed objectives section above):
 
 - **`SKILL.md`** — base mode. Runs every prompt, A/B tests each candidate, and
   produces the final report of accepted optimizations.
@@ -81,7 +100,20 @@ optimization-prompts/
 │   ├── string-formatting-parsing.md
 │   ├── structural-review.md
 │   ├── struct-enum-layout.md
-│   └── synchronization.md
+│   ├── synchronization.md
+│   └── speed/           # speed-focused prompts (objective = speed)
+│       ├── algorithmic.md
+│       ├── allocation-elimination.md
+│       ├── branch-prediction.md
+│       ├── cache-locality.md
+│       ├── concurrency.md
+│       ├── hashing.md
+│       ├── inlining.md
+│       ├── io.md
+│       ├── iteration.md
+│       ├── lazy-initialization.md
+│       ├── parsing-formatting.md
+│       └── vectorization.md
 ├── cpp/                 # C++ prompts
 │   └── ownership-raii.md  # memory leaks + manual ownership → RAII
 ├── docker/              # infrastructure prompts (dispatched when Dockerfiles present)
@@ -93,7 +125,10 @@ optimization-prompts/
 Language roots exist only when they have at least one prompt. A category that applies
 to a language gets its own file under that language's directory; there is **no** shared
 cross-language directory. If the same technique applies to Rust and C++, write it twice,
-tuned to each language's idioms — do not generalize into a hybrid prompt.
+tuned to each language's idioms — do not generalize into a hybrid prompt. Likewise, a
+concern that has both a size and a speed angle gets two files: the general pass under
+`<language>/` and the speed-tuned pass under `<language>/speed/` (see the size vs
+speed objectives section above).
 
 ## Prompt format
 

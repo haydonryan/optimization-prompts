@@ -1,6 +1,6 @@
 ---
 name: optimize-to-report
-description: Optimization coordinator in detailed-report mode. Detects the target codebase language, dispatches each concern-specific prompt as a subagent, A/B tests candidates for release binary size and speed (per architecture), and produces a complete written report of ALL candidates — HIGH, MEDIUM, and LOW — with flagged code, proposed remediation, per-arch A/B evidence, and verification. Use when you want a thorough report file, not tracker stories.
+description: Optimization coordinator in detailed-report mode. Detects the target codebase language, dispatches each concern-specific prompt (rust/ for size, rust/speed/ for speed) as a subagent, A/B tests candidates for release binary size and speed (per architecture), and produces a complete written report of ALL candidates — HIGH, MEDIUM, and LOW — with flagged code, proposed remediation, per-arch A/B evidence, and verification. Use when you want a thorough report file, not tracker stories.
 ---
 
 # Optimization Coordinator — Detailed-Report Mode
@@ -10,6 +10,22 @@ concern-specific prompts in this repository against the target codebase, A/B tes
 candidates, and write a **complete detailed report**. This mode differs from the base
 `optimize` skill in one essential way: **the report includes every candidate,
 including LOW-priority ones. Do not drop low issues.**
+
+## Objective selection
+
+Choose the optimization objective before dispatching. It selects which prompt set
+runs, and which measurement is the primary acceptance gate:
+
+- **`size`** (default) — shrink the release binary. Dispatch the general set in
+  `<language>/` (e.g. `rust/*.md`). Acceptance gates on binary size; speed must not
+  regress.
+- **`speed`** — make the hot path faster. Dispatch the speed set in
+  `<language>/speed/` (e.g. `rust/speed/*.md`). Acceptance gates on runtime speed; a
+  candidate that is measurably faster is ACCEPTED even if the release binary grows
+  (size is still measured and reported, but is not a rejection gate for a speed win).
+
+The report states the objective and the prompt set it used. The same codebase can be
+run once per objective; the two reports are independent.
 
 ## Language detection
 
@@ -52,7 +68,7 @@ vendored deps, and `target/`. The pass is not complete until coverage is 100%.
 
 ## Step 3 — Dispatch one subagent per prompt
 
-For each prompt file in `<language>/`, spawn a subagent to run **that single prompt**
+For each prompt file in `<language>/` (e.g. `rust/*.md`) when the objective is **size**, or in `<language>/speed/` (e.g. `rust/speed/*.md`) when the objective is **speed**, spawn a subagent to run **that single prompt**
 against the codebase, returning candidates in the prompt's output contract. Run
 subagents in parallel up to your concurrency cap. Each subagent is read-only.
 
@@ -98,6 +114,10 @@ record real before/after numbers for BOTH:
 If the repo has no performance harness for the affected path, the coordinator MUST
 provision one (a benchmark, a representative workload, or a runnable script) rather
 than leaving performance unmeasured. `unmeasured` is the exception, not the default:
+**Objective.** When the run's objective is **speed**, a candidate that is measurably
+faster is ACCEPTED even if the release binary grows — size is still recorded per arch
+but is not a rejection gate for a speed win. Only mark a faster candidate `tradeoff`
+when the speed win is statistically weak or the size regression is extreme.
 **Exception — build-configuration candidates are NOT A/B-benchmarked.** Candidates
 whose category is `codegen-flags` or `release-profile-binary-size` (LTO, `-C` flags,
 `RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and low-risk:

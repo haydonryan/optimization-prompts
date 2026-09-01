@@ -1,6 +1,6 @@
 ---
 name: optimize-to-stories
-description: Optimization coordinator in backlog-story mode. Detects the target codebase language, dispatches each concern-specific prompt as a subagent, A/B tests every improvement for release binary size and speed across the LTO on/off × x86_64/aarch64 matrix, then turns each accepted improvement into a backlog story via the add-backlog-story skill. Use when optimization findings should land as tracked, A/B-verified work items rather than a report.
+description: Optimization coordinator in backlog-story mode. Detects the target codebase language, dispatches each concern-specific prompt (rust/ for size, rust/speed/ for speed) as a subagent, A/B tests every improvement for release binary size and speed across the LTO on/off × x86_64/aarch64 matrix, then turns each accepted improvement into a backlog story via the add-backlog-story skill. Use when optimization findings should land as tracked, A/B-verified work items rather than a report.
 ---
 
 # Optimization Coordinator — Backlog-Story Mode
@@ -11,6 +11,22 @@ every candidate, and convert every accepted improvement into a backlog story. Th
 mode follows the base `optimize` operating model with two differences: a **mandatory
 LTO × architecture A/B matrix**, and **story creation for every accepted candidate**
 via the `add-backlog-story` skill.
+
+## Objective selection
+
+Choose the optimization objective before dispatching. It selects which prompt set
+runs, and which measurement is the primary acceptance gate:
+
+- **`size`** (default) — shrink the release binary. Dispatch the general set in
+  `<language>/` (e.g. `rust/*.md`). Acceptance gates on binary size; speed must not
+  regress.
+- **`speed`** — make the hot path faster. Dispatch the speed set in
+  `<language>/speed/` (e.g. `rust/speed/*.md`). Acceptance gates on runtime speed; a
+  candidate that is measurably faster is ACCEPTED even if the release binary grows
+  (size is still measured and reported, but is not a rejection gate for a speed win).
+
+The LTO × arch matrix is still required for every candidate regardless of objective;
+only the primary acceptance gate shifts.
 
 ## Language detection
 
@@ -71,7 +87,7 @@ not complete until coverage is 100%.
 
 ## Step 3 — Dispatch one subagent per prompt
 
-For each prompt file in `<language>/`, spawn a subagent to run **that single prompt**
+For each prompt file in `<language>/` (e.g. `rust/*.md`) when the objective is **size**, or in `<language>/speed/` (e.g. `rust/speed/*.md`) when the objective is **speed**, spawn a subagent to run **that single prompt**
 against the codebase. Give each: the prompt file path, the repo path, the baseline
 numbers and build/test commands, the coverage ledger, and the instruction to return
 candidates in the prompt's output contract. Run subagents in parallel up to your
@@ -131,6 +147,11 @@ Acceptance rules:
 
 - **ACCEPT** only if the candidate is correct AND is better-or-equal on the (LTO,
   arch) cells it targets.
+- **Speed objective.** When the run's objective is **speed**, a candidate that is
+  measurably faster on the cells it targets is ACCEPTED even if the release binary
+  grows — size is still measured per (LTO, arch) cell but is not a rejection gate for
+  a speed win. Only mark a faster candidate TRADEOFF when the speed win is
+  statistically weak or the size regression is extreme.
 - **TRADEOFF — REVIEW** if it wins under one LTO setting but regresses under the
   other, or on one arch but not the other. Report the specific cell that regressed;
   do **not** silently accept an LTO/arch-specific regression.

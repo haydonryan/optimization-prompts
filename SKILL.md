@@ -1,6 +1,6 @@
 ---
 name: optimize
-description: Language-agnostic optimization coordinator. Detects the target codebase language, then dispatches each concern-specific prompt in the matching language directory (e.g. rust/) as a subagent against the codebase. Every discovered optimization is classified and A/B tested individually for speed and release binary size. Use when asked to optimize a Rust (and later C++) codebase for smaller release binaries, faster runtime, fewer allocations, or lower memory.
+description: Language-agnostic optimization coordinator. Detects the target codebase language, then dispatches each concern-specific prompt in the matching language directory (e.g. rust/ for size, rust/speed/ for speed) as a subagent against the codebase. Every discovered optimization is classified and A/B tested individually for speed and release binary size. Use when asked to optimize a Rust (and later C++) codebase for smaller release binaries, faster runtime, fewer allocations, or lower memory.
 ---
 
 # Optimization Coordinator
@@ -13,6 +13,22 @@ discovered candidate individually.
 The target is **measurably better code**: less source-level work, fewer allocations,
 less generated code, smaller release binary, equal or better performance — with
 externally observable behavior preserved.
+
+## Objective selection
+
+Choose the optimization objective before dispatching. It selects which prompt set
+runs, and which measurement is the primary acceptance gate:
+
+- **`size`** (default) — shrink the release binary. Dispatch the general set in
+  `<language>/` (e.g. `rust/*.md`). Acceptance gates on binary size; speed must not
+  regress.
+- **`speed`** — make the hot path faster. Dispatch the speed set in
+  `<language>/speed/` (e.g. `rust/speed/*.md`). Acceptance gates on runtime speed; a
+  candidate that is measurably faster is ACCEPTED even if the release binary grows
+  (size is still measured and reported, but is not a rejection gate for a speed win).
+
+The same codebase can be run twice — once per objective — and the two passes are
+independent. A pass's report states the objective and the prompt set it used.
 
 ## Language detection
 
@@ -27,7 +43,7 @@ is not yet supported, say so and stop — do not invent prompts.
 
 Supported languages and prompt locations:
 
-- Rust → `rust/`
+- Rust → `rust/` (size/general) and `rust/speed/` (speed)
 - C++ → `cpp/`
 
 **Infrastructure concerns** (not a source language) are dispatched separately:
@@ -141,8 +157,10 @@ subagent must inspect its contents. The pass is not complete until coverage is 1
 
 Dispatch the source-language prompts, plus the `docker/` prompts when Dockerfiles are
 present and the `general/` prompts on every run. For each prompt file in
-`<language>/` (e.g. `rust/*.md`), `docker/`, or `general/`, spawn a subagent whose job
-is to run **that single prompt** against the codebase. Give each subagent:
+`<language>/` (e.g. `rust/*.md`) when the objective is **size**, or in
+`<language>/speed/` (e.g. `rust/speed/*.md`) when the objective is **speed** —
+plus `docker/`, or `general/` — spawn a subagent whose job is to run **that single
+prompt** against the codebase. Give each subagent:
 
 - the absolute path to its prompt file,
 - the repository path,
@@ -235,6 +253,11 @@ Decide with these rules:
   performance statistically unchanged.
 - **TRADEOFF — REVIEW** when binary smaller but slower, or faster but larger. Report
   it explicitly; do not silently accept it.
+- **Speed objective.** When the run's objective is **speed**, a candidate that is
+  measurably faster is ACCEPTED even if the release binary grows — size is recorded
+  but is not a rejection gate. Only report a TRADEOFF when the speed win is
+  statistically weak or the size regression is extreme; otherwise the faster
+  candidate is the accepted outcome of a speed pass.
 - **REJECT** when it increases binary size, slows execution, increases allocations,
   breaks tests, worsens memory, or provides no measurable benefit. Record rejected
   experiments — they are useful information.
