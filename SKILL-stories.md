@@ -130,16 +130,7 @@ For each candidate:
    natively (or via `qemu-*` emulation, flagged as such), multiple runs to beat
    noise. Use the repo's benchmark harness when it exists; if none covers the
    affected path, PROVISION one (a named microbenchmark or a representative workload
-   with an exact command such as `hyperfine 'sort large.txt'` / `perf stat`). Speed
-**Exception — build-configuration candidates do NOT get the LTO × arch A/B matrix.**
-Candidates whose category is `codegen-flags` or `release-profile-binary-size` (LTO,
-`-C` flags, `RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and
-low-risk: binary size is fixed for a given build and they are not source
-transformations. Apply each such suggestion in isolation, confirm the build and the
-repo's test gate pass, and record the resulting binary size. Do **not** run the
-multi-cell speed/size matrix on them; note any plausible runtime effect qualitatively.
-Do not create a backlog story for a routine build-config tweak unless it delivers a
-clear, non-trivial, deterministic size win.
+   with an exact command such as `hyperfine 'sort large.txt'` / `perf stat`).
 
 Acceptance rules:
 

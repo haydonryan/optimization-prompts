@@ -77,7 +77,6 @@ optimization-prompts/
 │   ├── allocation-elimination.md
 │   ├── async-future-state.md
 │   ├── bounds-checks-iteration.md
-│   ├── codegen-flags.md
 │   ├── collections-data-structures.md
 │   ├── compact-idiomatic-code.md
 │   ├── control-flow-generated-code.md
@@ -93,7 +92,6 @@ optimization-prompts/
 │   ├── monomorphization.md
 │   ├── ownership-clone-copy.md
 │   ├── parallelism-exploitation.md
-│   ├── release-profile-binary-size.md
 │   ├── repeated-work-algorithmic.md
 │   ├── serialization.md
 │   ├── simd-vectorization.md

@@ -118,13 +118,6 @@ than leaving performance unmeasured. `unmeasured` is the exception, not the defa
 faster is ACCEPTED even if the release binary grows — size is still recorded per arch
 but is not a rejection gate for a speed win. Only mark a faster candidate `tradeoff`
 when the speed win is statistically weak or the size regression is extreme.
-**Exception — build-configuration candidates are NOT A/B-benchmarked.** Candidates
-whose category is `codegen-flags` or `release-profile-binary-size` (LTO, `-C` flags,
-`RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and low-risk:
-binary size is fixed for a given build and they are not source transformations. Apply
-each such suggestion in isolation, confirm the build and the repo's test gate pass,
-and record the resulting binary size. Do **not** run the speed-measurement ceremony
-on them; note any plausible runtime effect qualitatively.
 
 ## Step 6 — Produce the complete detailed report
 

@@ -210,15 +210,7 @@ candidate may be accepted from reasoning alone; it must be built and measured fo
 both size and speed. If the repo has no performance harness for the affected path,
 the coordinator MUST provision one (a named microbenchmark or representative workload
 with an exact command, e.g. `hyperfine 'sort large.txt'` / `perf stat`) rather than
-leaving speed unmeasured. `unmeasured` is the exception, not the default, and MUST
-**Exception — build-configuration candidates are NOT A/B-benchmarked.** Candidates
-whose category is `codegen-flags` or `release-profile-binary-size` (LTO, `-C` flags,
-`RUSTFLAGS`, `[profile.*]`, strip, panic strategy) are deterministic and low-risk:
-binary size is fixed for a given build and they are not source transformations. The
-coordinator applies each such suggestion in isolation, confirms the build and the
-repo's test gate pass, and records the resulting binary size. Do **not** run the
-speed-measurement ceremony on them. If such a change plausibly affects runtime, note
-it qualitatively in the report; do not benchmark it.
+leaving speed unmeasured. `unmeasured` is the exception, not the default.
 
 For each candidate:
 
