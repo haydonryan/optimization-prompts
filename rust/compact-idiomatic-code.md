@@ -35,6 +35,10 @@ hits.
   compilation, path normalization, env reads, and serialization in loops.
 - Move expensive error/log message construction behind cold branches with closures
   such as `ok_or_else` or `with_context` where applicable.
+- Prefer lazy `Option`/`Result` methods (`ok_or_else`, `unwrap_or_else`, `or_else`,
+  `map_or_else`, `get_or_insert_with`) over their eager counterparts (`ok_or`,
+  `unwrap_or`, `or`, `map_or`, `get_or_insert`) when the fallback/default is expensive
+  to construct — the eager forms always evaluate it even when unused.
 - Replace hand-written loops with iterator adapters only when the generated work is
   equal or lower and the result is clearer. Keep loops when they avoid allocation or
   short-circuit more directly.

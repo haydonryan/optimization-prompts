@@ -36,6 +36,12 @@ Look for:
   actually relied upon — but do **not** switch if iteration order is externally
   observable (serialized output, stable iteration, tests asserting order)
 - duplicate hashing (hash the same key, re-derive it, or clone it just to look up)
+- **byte-wise hashing:** `#[derive(Hash)]` hashes each field separately. For a hot,
+  hashed-often type with no padding bytes and a layout safe to reinterpret, hashing the
+  type as a raw byte stream instead — via `zerocopy`/`bytemuck` `#[derive(ByteHash)]`,
+  or the `derive_hash_fast` crate — can be significantly faster. Only for types with no
+  padding/uninitialized bytes and no bits whose value is unspecified; the win depends on
+  the hash function and the exact type shape, so A/B measure it rather than assuming it.
 
 **Security caveat:** if the map is reachable from untrusted/network input where an
 adversary could craft colliding keys (HTTP headers, JSON keys, auth data), keep the

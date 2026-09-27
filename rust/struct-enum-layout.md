@@ -36,6 +36,17 @@ Consider:
 - narrower integer types
 - compact enums, bitflags, niche optimization
 - separating hot and cold fields
+- **boxed slices** (`Vec::into_boxed_slice`, or `collect::<Box<[T]>>` when the length
+  is known) to drop the capacity word from vectors that will no longer grow —
+  `size_of::<Box<[T]>>()` is two words, `size_of::<Vec<T>>()` is three
+- `ThinVec` (from the `thin-vec` crate) when a vector inside an oft-instantiated type or
+  the largest enum variant is usually empty — stores length/capacity with the elements,
+  so `size_of::<ThinVec<T>>()` is one word
+- smaller integer indices (`u32`/`u16`/`u8` coerced to `usize` at use sites) when the
+  range provably fits
+- **regression guards:** for a hot type, add a `static_assertions::assert_eq_size!`
+  (cfg-gated to the target arch, e.g. `x86_64`) so an accidental size increase fails
+  the build
 
 Examples worth investigating:
 
@@ -48,6 +59,10 @@ Option<&T>
 Do **not** shrink integer widths without proving range correctness. A data-layout
 optimization must account for cache behavior as well as allocation overhead — a
 smaller struct in a hot collection usually wins, but confirm with measurement.
+
+Measure exact layout with `RUSTFLAGS=-Zprint-type-sizes cargo +nightly build --release`
+(or the `top-type-sizes` crate) to see per-type size, alignment, discriminant, field
+ordering, and padding — including which enum variant is driving an oversized type.
 
 ## A/B-only validation
 

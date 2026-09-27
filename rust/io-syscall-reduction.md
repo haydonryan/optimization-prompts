@@ -37,6 +37,9 @@ Look for:
   `create_dir_all` consolidation
 - full-file buffering where streaming would do (large temp `Vec<u8>`/`String` held in
   memory)
+- reading text into `String` (UTF-8 validation overhead on every line/read) when only
+  raw bytes / ASCII are needed — use `BufRead::read_until` on a reused `Vec<u8>` instead
+  of `lines()`, or a byte-oriented line reader such as the `bstr`/`linereader` crates
 - `stdout().lock()` / `stderr().lock()` taken for a **single** write (or a
   non-load-bearing short sequence) on global I/O handles: the lock guard's `Write` +
   unlock/flush `Drop` machinery is inlined per call site under fat-LTO, so a shared

@@ -35,6 +35,9 @@ opportunities to:
 - use `mem::take`, `mem::replace`, `Option::take`
 - reorganize ownership so a clone moves later or clones less data
 - avoid repeated `Arc`/`Rc` increment-decrement cycles
+- use `Rc::make_mut`/`Arc::make_mut` (clone-on-write) to mutate a shared value in place
+  when the refcount is 1, cloning only when the value is actually shared elsewhere —
+  avoids unconditional `clone`-then-mutate on values that are usually uniquely owned
 
 Do **not** remove clones without proving ownership and lifetime correctness. Flag any
 clone you propose removing with the ownership/lifetime reasoning that makes it safe.

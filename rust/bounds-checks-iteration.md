@@ -39,6 +39,22 @@ Do **not** introduce unchecked indexing (`get_unchecked`) solely because it migh
 faster. `unsafe` is a last resort and requires compelling measured evidence that safe
 Rust cannot eliminate the check.
 
+Beyond bounds checks, look for iterator-API choices that reduce allocations or help
+codegen:
+
+- returning `impl Iterator<Item = T>` (or a custom iterator) instead of
+  `collect`-ing to `Vec<T>` when the collection is only iterated again — avoids the
+  intermediate allocation
+- implementing `Iterator::size_hint` / `ExactSizeIterator::len` on custom iterators so
+  `collect`/`extend` can preallocate
+- `chunks_exact`/`rchunks_exact` (+ `remainder`/`into_remainder`) instead of
+  `chunks`/`rchunks` when the chunk size divides the length — the `_exact` variants
+  skip the per-chunk remainder check
+- `filter_map` instead of `filter(...).map(...)` to keep a single fused adapter
+- `iter().copied()` over `iter()` for small `Copy` element types, so consumers get
+  values by value and LLVM can optimize better
+- avoiding `chain` for hot iterators when a single fused iterator is possible
+
 ## Output contract
 
 Report every candidate in this exact format. Do **not** modify the codebase — the

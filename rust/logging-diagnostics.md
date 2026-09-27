@@ -29,6 +29,9 @@ and custom diagnostic systems. Look for:
 - strings formatted before log-level checks
 - allocations only needed for logs
 - expensive calculations performed when logging is disabled
+- `assert!` on a hot, non-safety path that could be `debug_assert!` (which runs only in
+  dev builds) — but never downgrade a check that is required for safety or for correct
+  release behavior
 **Global I/O-handle `.lock()` bloat (fat-LTO specific).** Look for
 `std::io::stderr().lock()` / `stdout().lock()` used for a **single** diagnostic or
 output write, especially in shared macros/helpers invoked by many functions (e.g. a

@@ -36,6 +36,12 @@ a loop still emits a `cmp`/`jae` bounds check per iteration.
 - **`chain`, `flatten`, `flat_map` that allocate** where a fused borrow keeps one pass.
 - **A `for` loop re-reading `v[i]` and `v[i+1]`** where `.windows(2)` or a fused
   pairwise iteration is cleaner and bounds-safe.
+- **Iterator-API allocation/codegen choices on the hot path** — return
+  `impl Iterator<Item = T>` instead of a collected `Vec` when the result is only
+  re-iterated; implement `size_hint`/`ExactSizeIterator::len` so `collect`/`extend`
+  preallocate; use `chunks_exact` over `chunks` when the chunk size divides the
+  length; `filter_map` over `filter`+`map`; `iter().copied()` for small `Copy`
+  elements; avoid `chain` on hot iterators.
 
 Prefer safe, idiomatic iterator fusion over `unsafe` `get_unchecked`. If a bounds
 check truly remains on a provably-safe path and iterator fusion cannot remove it, flag
