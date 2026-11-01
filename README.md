@@ -90,6 +90,7 @@ optimization-prompts/
 │   ├── logging-diagnostics.md
 │   ├── memory-retained-peak.md
 │   ├── monomorphization.md
+│   ├── option-nonzero-narrowing.md
 │   ├── ownership-clone-copy.md
 │   ├── parallelism-exploitation.md
 │   ├── repeated-work-algorithmic.md

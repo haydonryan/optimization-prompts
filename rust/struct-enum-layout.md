@@ -44,6 +44,10 @@ Consider:
   so `size_of::<ThinVec<T>>()` is one word
 - smaller integer indices (`u32`/`u16`/`u8` coerced to `usize` at use sites) when the
   range provably fits
+- **`Option<u8>` → `Option<NonZeroU8>`** niche narrowing (2 bytes → 1 byte) when `0`
+  is never a meaningful `Some` value and the value does not cross a
+  serde/CLI/DB/FFI boundary — see the dedicated `option-nonzero-narrowing` pass for
+  the hard guardrail and current applicability survey
 - **regression guards:** for a hot type, add a `static_assertions::assert_eq_size!`
   (cfg-gated to the target arch, e.g. `x86_64`) so an accidental size increase fails
   the build
